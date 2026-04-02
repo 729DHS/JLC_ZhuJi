@@ -51,6 +51,7 @@ static const uint32_t LED_FADE_STEP_MS = 8U;
 static const uint32_t LED_PEAK_HOLD_MS = 160U;
 static const uint32_t LED_VALLEY_HOLD_MS = 120U;
 
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/

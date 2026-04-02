@@ -12,7 +12,7 @@
 - PWM输出引脚: TIM10_CH1
 
 ### 2.2 软件架构
-- 开发环境: STM32CubeMX + Keil MDK
+- 开发环境: STM32CubeMX + VScode
 - 库函数: STM32 HAL库
 - 代码结构: 标准STM32 HAL项目结构
 
