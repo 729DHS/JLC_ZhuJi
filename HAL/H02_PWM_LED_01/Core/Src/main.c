@@ -44,10 +44,12 @@
 TIM_HandleTypeDef htim10;
 
 /* USER CODE BEGIN PV */
-static const uint16_t LED_ARR_MIN = 1000U;
-static const uint16_t LED_ARR_MAX = 60000U;
-static const uint16_t LED_ARR_STEP = 500U;
-static const uint16_t LED_PULSE_WIDTH = 500U;
+static const uint16_t LED_PWM_DUTY_MAX = 60000U;
+static const uint16_t LED_PWM_DUTY_MIN = 0U;
+static const uint16_t LED_FADE_STEPS = 70U;
+static const uint32_t LED_FADE_STEP_MS = 8U;
+static const uint32_t LED_PEAK_HOLD_MS = 160U;
+static const uint32_t LED_VALLEY_HOLD_MS = 120U;
 
 /* USER CODE END PV */
 
@@ -55,6 +57,8 @@ static const uint16_t LED_PULSE_WIDTH = 500U;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM10_Init(void);
+static void LED_SetBrightness(uint16_t duty);
+static void LED_GentleFade(uint16_t start_duty, uint16_t end_duty);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -99,11 +103,7 @@ int main(void)
   {
     Error_Handler();
   }
-
-  __HAL_TIM_SET_COMPARE(&htim10, TIM_CHANNEL_1, LED_PULSE_WIDTH);
-
-  uint16_t arr = LED_ARR_MIN;
-  int16_t direction = (int16_t)LED_ARR_STEP;
+  LED_SetBrightness(LED_PWM_DUTY_MIN);
 
   /* USER CODE END 2 */
 
@@ -114,20 +114,11 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    __HAL_TIM_SET_AUTORELOAD(&htim10, arr);
-
-    if (arr <= LED_ARR_MIN)
-    {
-      direction = (int16_t)LED_ARR_STEP;
-    }
-    else if (arr >= LED_ARR_MAX)
-    {
-      direction = -(int16_t)LED_ARR_STEP;
-    }
-
-    arr = (uint16_t)((int32_t)arr + direction);
-
-    HAL_Delay(10);
+    LED_GentleFade(LED_PWM_DUTY_MIN, LED_PWM_DUTY_MAX);
+    HAL_Delay(LED_PEAK_HOLD_MS);
+    LED_GentleFade(LED_PWM_DUTY_MAX, LED_PWM_DUTY_MIN);
+    HAL_Delay(LED_VALLEY_HOLD_MS);
+    
   }
   /* USER CODE END 3 */
 }
@@ -199,7 +190,7 @@ static void MX_TIM10_Init(void)
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim10.Init.Period = 65535;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
   {
     Error_Handler();
@@ -209,7 +200,7 @@ static void MX_TIM10_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = LED_PULSE_WIDTH;
+  sConfigOC.Pulse = LED_PWM_DUTY_MAX;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim10, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
@@ -245,6 +236,23 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+static void LED_SetBrightness(uint16_t duty)
+{
+  __HAL_TIM_SET_COMPARE(&htim10, TIM_CHANNEL_1, duty);
+}
+
+static void LED_GentleFade(uint16_t start_duty, uint16_t end_duty)
+{
+  const int32_t delta = (int32_t)end_duty - start_duty;
+
+  for (uint16_t step = 0; step <= LED_FADE_STEPS; ++step)
+  {
+    const uint16_t duty = (uint16_t)(start_duty + (delta * step) / LED_FADE_STEPS);
+    LED_SetBrightness(duty);
+    HAL_Delay(LED_FADE_STEP_MS);
+  }
+}
 
 /* USER CODE END 4 */
 
